@@ -1,0 +1,35 @@
+server:
+  port: 8080 # Puerto interno del contenedor Docker (luego en EC2 lo mapearemos al 8086)
+
+spring:
+  application:
+    name: pedidos360-pagos
+  datasource:
+    # Base de datos H2 en memoria para guardar el estado de bloqueo sin consumir RAM extra
+    url: jdbc:h2:mem:pagosdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update # Crea automáticamente la tabla estado_pago_cliente al arrancar
+    show-sql: false
+  kafka:
+    # Lee la IP privada de ec2-kafka (ej. 172.31.24.100:9092) desde Docker
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: payment-velocity-group # Grupo de consumidores exclusivo para detección de fraude
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*" # Permite deserializar nuestros DTOs sin bloqueos de seguridad
+    listener:
+      missing-topics-fatal: false # Evita que el microservicio caiga si Kafka tarda unos segundos en responder
+
+webpay:
+  # URL a donde Transbank devolverá al usuario después de pagar (Angular local por defecto)
+  return-url: ${WEBPAY_RETURN_URL:http://localhost:4200/callback}
