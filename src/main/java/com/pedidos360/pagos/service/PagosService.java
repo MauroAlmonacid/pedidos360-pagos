@@ -5,6 +5,7 @@ import cl.transbank.webpay.webpayplus.WebpayPlus;
 import com.pedidos360.pagos.dto.IntentoPagoDTO;
 import com.pedidos360.pagos.dto.TransaccionRespuestaDTO;
 import com.pedidos360.pagos.model.EstadoPagoCliente;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pedidos360.pagos.repository.EstadoPagoClienteRepositorio;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class PagosService {
 
-    private final KafkaTemplate<String, IntentoPagoDTO> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
     private final EstadoPagoClienteRepositorio estadoRepositorio;
     private static final String TOPIC_NOMBRE = "payment-attempts"; // Tópico creado en Fase 1
 
@@ -49,9 +51,14 @@ public class PagosService {
 
     // Envía el intento de pago de forma asíncrona a Kafka usando idCliente como Key de partición
     public void producirIntentoPago(String idCliente, Long monto, String idTransaccion) {
-        IntentoPagoDTO evento = new IntentoPagoDTO(idCliente, monto, idTransaccion, LocalDateTime.now());
-        kafkaTemplate.send(TOPIC_NOMBRE, idCliente, evento);
-        log.info("Evento de intento enviado a Kafka [{}] para cliente: {}", TOPIC_NOMBRE, idCliente);
+        try {
+            IntentoPagoDTO evento = new IntentoPagoDTO(idCliente, monto, idTransaccion, LocalDateTime.now());
+            String jsonEvento = objectMapper.writeValueAsString(evento);
+            kafkaTemplate.send(TOPIC_NOMBRE, idCliente, jsonEvento);
+            log.info("Evento de intento enviado a Kafka [{}] para cliente: {}", TOPIC_NOMBRE, idCliente);
+        } catch (Exception e) {
+            log.error("Error al serializar evento hacia Kafka: {}", e.getMessage());
+        }
     }
 
     // Conecta con Transbank WebPay Plus (ambiente de integración oficial) para generar token y URL

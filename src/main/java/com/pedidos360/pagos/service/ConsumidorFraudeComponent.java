@@ -1,5 +1,6 @@
 package com.pedidos360.pagos.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pedidos360.pagos.dto.IntentoPagoDTO;
 import com.pedidos360.pagos.model.EstadoPagoCliente;
 import com.pedidos360.pagos.repository.EstadoPagoClienteRepositorio;
@@ -18,7 +19,8 @@ import java.time.LocalDateTime;
 public class ConsumidorFraudeComponent {
 
     private final EstadoPagoClienteRepositorio estadoRepositorio;
-
+    private final ObjectMapper objectMapper;
+    
     // Escucha en tiempo real todos los eventos que llegan al tópico payment-attempts
     @KafkaListener(topics = "payment-attempts", groupId = "payment-velocity-group")
     @Transactional
