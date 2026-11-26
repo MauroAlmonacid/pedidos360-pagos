@@ -28,5 +28,5 @@ spring:
       missing-topics-fatal: false
 
 webpay:
-  # URL a donde Transbank devolverá al usuario después de pagar (Angular local por defecto)
-  return-url: ${WEBPAY_RETURN_URL:http://localhost:4200/callback}
+  # URL a donde Transbank devolverá al usuario después de pagar
+  return-url: ${WEBPAY_RETURN_URL:https://soa53kjpah.execute-api.us-east-1.amazonaws.com/callback}
